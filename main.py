@@ -1,35 +1,61 @@
 import multiprocessing
 import random
 import time
-from playsound import playsound
+import subprocess
 import tkinter as tk
 import os
+
+# Get the directory where this script is located
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 global song_name
 global orig_colour
 song_name=None
-SONGS_DIR = "Songs"
+SONGS_DIR = os.path.join(SCRIPT_DIR, "Songs")
 class Song:
     def __init__(self, title, file):
         self.title = title
         self.file = file
 
 songs = [
-    "16 Chapels", "3500", "90210", "Antidote", "Apple Pie", "Back On It", "Backyard", "Bad Mood Shit On You", "BACC", "Bandz",
-    "Basement Freestyle", "beibs in the trap", "Blame", "Blocka La Flame", "coordinate", "Dance On The Moon", "Don't Play", "Drugs You Should Try It",
-    "Drive", "First Class", "first take", "goosebumps", "Gree & Purple", "guidance", "Hell Of A Night", "High Fashion", "I Can Tell", "Impossible", "Mamacita", "Maria I'm Drunk", "Naked",
-    "Nightcrawler", "Never Catch Me", "Oh My Dis Side", "outside", "Pornography", "Pray 4 Love", "Quintana", "Quintana Pt. 2",
-    "sdp interlude", "Serenade", "Skyfall", "sweet sweet", "The Curse", "The Prayer", "the ends", "through the late night", "Up Top", "Upper Echelon", "Uptown", "way back", "wonderful", "Zombies"
+    "16.Chapels", "Hell of a Night", "SIRENS", "3500", "High.Fashion.Ft.Future",
+    "SKELETONS", "5% TINT", "High.Fashion", "SKITZO",
+    "90210", "Highest in the Room", "STARGAZING", "A -Team", "I Can Tell",
+    "STOP TRYING TO BE GOD", "ASTROTHUNDER", "I KNOW ?", "Skyfall",
+    "Antidote", "I KNOW ？", "Sloppy Toppy", "Apple Pie", "Impossible",
+    "TELEKINESIS", "BUTTERFLY EFFECT", "K-POP", "THANK GOD",
+    "Back.On.It", "KICK OUT", "THE SCOTTS", "Backyard", "LOOOVE",
+    "TIL FURTHER NOTICE", "Bad.Mood.Shit.On.You", "LOST FOREVER", "TOPIA TWINS",
+    "Bandz", "MAFIA", "The Prayer", "Basement Freestyle", "MELTDOWN",
+    "The.Curse", "Blame", "MIA", "Trance",
+    "Blocka.La.Flame", "MODERN JAM", "Travis Scott - BACC (Bonus) (Official Audio)",
+    "CAN'T SAY", "MY EYES", "Up.Top", "CAROUSEL", "Mamacita", "Upper.Echelon",
+    "CHAMPAIN & VACAY", "Maria.I.m.Drunk", "Uptown", "CIRCUS MAXIMUS",
+    "Mo City Flexologist", "WAKE UP", "COFFEE BEAN", "NC-17", "WHO? WHAT!",
+    "DA WIZARD", "NO BYSTANDERS", "Watch", "DELRESTO (ECHOES)", "Naked",
+    "YOSEMITE", "DUMBO", "Never.Catch.Me", "Zombies",
+    "Dance on the Moon", "Nightcrawler", "biebs in the trap", "Don't Play",
+    "Only 1", "coordinate", "Drive", "Overdue", "first.take",
+    "Drugs.You.Should.Try.It", "PARASAIL", "goosebumps", "ESCAPE PLAN",
+    "PBT", "guidance", "FE!N", "Pornography", "outside",
+    "FLORIDA FLOW", "Pray.4.Love", "sdp interlude", "First.Class",
+    "Quintana Pt. 2", "sweet.sweet", "GOD'S COUNTRY", "Quintana", "the ends",
+    "Grey", "R.I.P. SCREW", "through the late night", "HOUSTONFORNICATION",
+    "Raindrops (Insane)", "way.back", "HYAENA", "SICKO MODE", "wonderful"
 ]
+
 def resetScore():
-    with open("currentScore.txt", "w") as file:  # Open the file in write mode to clear its contents
+    current_score_path = os.path.join(SCRIPT_DIR, "currentScore.txt")
+    lifetime_score_path = os.path.join(SCRIPT_DIR, "LifetimeScore.txt")
+    
+    with open(current_score_path, "w") as file:  # Open the file in write mode to clear its contents
         file.write("0\n0")  # Write "0" on the first line and "0" on the second line
     
     # Read the values back and update the scoreboard
-    with open("currentScore.txt", "r") as file:
+    with open(current_score_path, "r") as file:
         wins1, plays1 = map(int, file.read().splitlines())
     
-    with open("LifetimeScore.txt", "r") as file:
+    with open(lifetime_score_path, "r") as file:
         wins2, plays2 = map(int, file.read().splitlines())
     
     global scoreboard
@@ -63,11 +89,15 @@ def chooseSong():
     return song_name
 
 def update_scoreboard():
-    with open("currentScore.txt", "r") as file:
+    current_score_path = os.path.join(SCRIPT_DIR, "currentScore.txt")
+    lifetime_score_path = os.path.join(SCRIPT_DIR, "LifetimeScore.txt")
+    analysis_path = os.path.join(SCRIPT_DIR, "Analysis.txt")
+    
+    with open(current_score_path, "r") as file:
         wins1, plays1 = map(int, file.read().splitlines())
-    with open("LifetimeScore.txt", "r") as file:
+    with open(lifetime_score_path, "r") as file:
         wins2, plays2 = map(int, file.read().splitlines())
-    with open("analysis.txt", "r") as file:
+    with open(analysis_path, "r") as file:
         one = int(file.readline().strip())
         two = int(file.readline().strip())
         three = int(file.readline().strip())
@@ -78,23 +108,77 @@ def update_scoreboard():
     stats_text.config(text=f"1 Attempt:   {one}\n2 Attempts: {two}\n3 Attempts: {three}\n4 Attempts: {four}\n5 Attempts: {five}\n6 Attempts: {six}")
 
 def play_song(song_name):
-    song_name=os.path.join("Songs", song_name)
-    p = multiprocessing.Process(target=playsound, args=(song_name+".mp3",))
-    p.start()
+    import glob
+    import threading
     global skips
-    if skips==0:
-        time.sleep(1)
-    elif skips==1:
-        time.sleep(2.5)
-    elif skips==2:
-        time.sleep(4.5)
-    elif skips==3:
-        time.sleep(8)
-    elif skips==4:
-        time.sleep(16)
-    elif skips==5:
-        time.sleep(30)
-    p.terminate()
+
+    # Try multiple patterns to find the song file
+    # First try exact match (case-insensitive)
+    all_files = glob.glob(os.path.join(SONGS_DIR, "*.mp3"))
+    matches = []
+    
+    # Clean song name for matching (remove special chars that might interfere)
+    song_name_clean = song_name.strip()
+    
+    # Try exact filename match (case-insensitive)
+    for filepath in all_files:
+        filename = os.path.basename(filepath)
+        # Remove .mp3 extension for comparison
+        filename_no_ext = filename[:-4]
+        if filename_no_ext.lower() == song_name_clean.lower():
+            matches.append(filepath)
+            break
+    
+    # If no exact match, try substring match
+    if not matches:
+        for filepath in all_files:
+            filename = os.path.basename(filepath)
+            filename_no_ext = filename[:-4].lower()
+            song_name_lower = song_name_clean.lower()
+            # Check if song name is contained in filename or vice versa
+            if song_name_lower in filename_no_ext or filename_no_ext in song_name_lower:
+                matches.append(filepath)
+                break  # Just take the first match
+    
+    if not matches:
+        print(f"❌ No audio file found for: {song_name}")
+        print(f"   Looking in: {SONGS_DIR}")
+        return
+
+    filepath = matches[0]
+    print(f"🎵 Playing: {os.path.basename(filepath)}")
+    
+    # Verify file exists
+    if not os.path.exists(filepath):
+        print(f"❌ Error: File does not exist: {filepath}")
+        return
+    
+    durations = [1, 2.5, 4.5, 8, 16, 30]
+    wait_time = durations[min(skips, 5)]
+    
+    # Use macOS native afplay command for reliable audio playback
+    def play_audio():
+        try:
+            # Start afplay process (macOS native audio player)
+            process = subprocess.Popen(
+                ["afplay", filepath],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            # Wait for the specified duration
+            time.sleep(wait_time)
+            # Stop the audio playback
+            process.terminate()
+            process.wait()
+        except Exception as e:
+            print(f"❌ Error playing audio: {e}")
+            import traceback
+            traceback.print_exc()
+
+    # Play audio in a separate thread so it doesn't block the GUI
+    t = threading.Thread(target=play_audio, daemon=True)
+    t.start()
+
 
 def guess(guess_entry, song_name):
     global guess_text1
@@ -178,19 +262,23 @@ def guess(guess_entry, song_name):
             guess_text6.tag_config('colour', background="green", foreground="white")
             guess_text6.configure(bg="green")
             guess_text6.insert(tk.END, f" Congratulations! You guessed {song_name} in 6 tries!\n", 'colour')   
-        with open("currentScore.txt", "r+") as file:
+        current_score_path = os.path.join(SCRIPT_DIR, "currentScore.txt")
+        lifetime_score_path = os.path.join(SCRIPT_DIR, "LifetimeScore.txt")
+        analysis_path = os.path.join(SCRIPT_DIR, "Analysis.txt")
+        
+        with open(current_score_path, "r+") as file:
             wins, plays = map(int, file.read().splitlines())
             file.seek(0)
             file.write(f"{wins + 1}\n{plays + 1}")
-        with open("LifetimeScore.txt", "r+") as file:
+        with open(lifetime_score_path, "r+") as file:
             wins, plays = map(int, file.read().splitlines())
             file.seek(0)
             file.write(f"{wins + 1}\n{plays + 1}")
-        with open("analysis.txt", "r") as file:
+        with open(analysis_path, "r") as file:
             lines=file.readlines()
-            line_number=6-attempts
-            lines[line_number-1]=str(int(lines[line_number-1])+1)+"\n"
-        with open("analysis.txt", "w") as file:
+            attempt_num = 6 - attempts
+            lines[attempt_num - 1] = str(int(lines[attempt_num - 1]) + 1) + "\n"
+        with open(analysis_path, "w") as file:
             file.writelines(lines)
         return
     else:
@@ -226,16 +314,31 @@ def guess(guess_entry, song_name):
             guess_text6.insert(tk.END, f" {guessed_song}: Incorrect. Try Again. {attempts} attempt(s) remaining\n", 'colour')
     
     if attempts == -1:
-        guess_text6.insert(tk.END, f"{guessed_song}. Sorry, you've run out of guesses. The correct song was: {song_name}\n")
-        guess.text.configure(font = ("red"))
-        with open("currentScore.txt", "r+") as file:
+        guess_text6.delete("1.0", tk.END)
+        guess_text6.tag_config('colour', background="red", foreground="white")
+        guess_text6.configure(bg="red")
+        guess_text6.insert(tk.END,
+            f"Out of guesses! The correct song was: {song_name}\n",
+            'colour'
+        )
+
+        current_score_path = os.path.join(SCRIPT_DIR, "currentScore.txt")
+        lifetime_score_path = os.path.join(SCRIPT_DIR, "LifetimeScore.txt")
+        
+        # update current score
+        with open(current_score_path, "r+") as file:
             wins, plays = map(int, file.read().splitlines())
             file.seek(0)
             file.write(f"{wins}\n{plays + 1}")
-        with open("LifetimeScore.txt", "r+") as file:
+
+        # update lifetime score
+        with open(lifetime_score_path, "r+") as file:
             wins, plays = map(int, file.read().splitlines())
             file.seek(0)
             file.write(f"{wins}\n{plays + 1}")
+
+        return
+
 
 def insert_song(guess_entry):
     selected_song = listbox.get(listbox.curselection())
@@ -333,7 +436,8 @@ def main():
     label_guess = tk.Label(root, text="Guess the song:")
     guess_entry = tk.Entry(root, font=("Helvetica", 30))
     button_guess = tk.Button(root, text="Guess", command=lambda: guess(guess_entry, song_name))
-    play_image = tk.PhotoImage(file="play.png").subsample(2, 2)
+    play_image_path = os.path.join(SCRIPT_DIR, "play.png")
+    play_image = tk.PhotoImage(file=play_image_path).subsample(2, 2)
     skip_button=tk.Button(root, text="Skip", command=skip)
     
     guess_text1 = tk.Text(root, wrap=tk.WORD, width=130, height=75, font=("Helvetica", 48))
@@ -351,13 +455,17 @@ def main():
     global scoreboard
     global stats_text
     
-    with open("currentScore.txt", "r") as file:
+    current_score_path = os.path.join(SCRIPT_DIR, "currentScore.txt")
+    lifetime_score_path = os.path.join(SCRIPT_DIR, "LifetimeScore.txt")
+    analysis_path = os.path.join(SCRIPT_DIR, "Analysis.txt")
+    
+    with open(current_score_path, "r") as file:
         wins1 = int(file.readline().strip())
         plays1 = int(file.readline().strip())
-    with open("LifetimeScore.txt", "r") as file:
+    with open(lifetime_score_path, "r") as file:
         wins2 = int(file.readline().strip())
         plays2 = int(file.readline().strip())
-    with open("Analysis.txt", "r") as file:
+    with open(analysis_path, "r") as file:
         one = int(file.readline().strip())
         two = int(file.readline().strip())
         three = int(file.readline().strip())
